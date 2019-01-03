@@ -1,5 +1,7 @@
 # Vim swap files
 *.swp
+*~
+.DS_Store
 
 # Object files
 *.o

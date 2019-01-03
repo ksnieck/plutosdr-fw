@@ -1,9 +1,9 @@
 #PATH=$PATH:/opt/Xilinx/SDK/2015.4/gnu/arm/lin/bin
 
-CROSS_COMPILE ?= arm-xilinx-linux-gnueabi-
+CROSS_COMPILE ?= arm-linux-gnueabihf
 
 NCORES = $(shell grep -c ^processor /proc/cpuinfo)
-VIVADO_SETTINGS ?= /opt/Xilinx/Vivado/2017.4/settings64.sh
+VIVADO_SETTINGS ?= /opt/Xilinx/Vivado/2018.2/settings64.sh
 VSUBDIRS = hdl buildroot linux u-boot-xlnx
 
 VERSION=$(shell git describe --abbrev=4 --dirty --always --tags)
@@ -52,7 +52,7 @@ build:
 
 u-boot-xlnx/u-boot u-boot-xlnx/tools/mkimage:
 	make -C u-boot-xlnx ARCH=arm zynq_$(TARGET)_defconfig
-	make -C u-boot-xlnx ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE) UBOOTVERSION="$(UBOOT_VERSION)"
+	make -C u-boot-xlnx ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE)- UBOOTVERSION="$(UBOOT_VERSION)"
 
 .PHONY: u-boot-xlnx/u-boot
 
@@ -60,7 +60,7 @@ build/u-boot.elf: u-boot-xlnx/u-boot | build
 	cp $< $@
 
 build/uboot-env.txt: u-boot-xlnx/u-boot | build
-	CROSS_COMPILE=$(CROSS_COMPILE) scripts/get_default_envs.sh > $@
+	CROSS_COMPILE=$(CROSS_COMPILE)- scripts/get_default_envs.sh > $@
 
 build/uboot-env.bin: build/uboot-env.txt
 	u-boot-xlnx/tools/mkenvimage -s 0x20000 -o $@ $<
@@ -69,7 +69,7 @@ build/uboot-env.bin: build/uboot-env.txt
 
 linux/arch/arm/boot/zImage:
 	make -C linux ARCH=arm zynq_$(TARGET)_defconfig
-	make -C linux -j $(NCORES) ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE) zImage UIMAGE_LOADADDR=0x8000
+	make -C linux -j $(NCORES) ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE)- zImage UIMAGE_LOADADDR=0x8000
 
 .PHONY: linux/arch/arm/boot/zImage
 
@@ -80,7 +80,7 @@ build/zImage: linux/arch/arm/boot/zImage  | build
 ### Device Tree ###
 
 linux/arch/arm/boot/dts/%.dtb: linux/arch/arm/boot/dts/%.dts  linux/arch/arm/boot/dts/zynq-pluto-sdr.dtsi
-	make -C linux -j $(NCORES) ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE) $(notdir $@)
+	make -C linux -j $(NCORES) ARCH=arm CROSS_COMPILE=$(CROSS_COMPILE)- $(notdir $@)
 
 build/%.dtb: linux/arch/arm/boot/dts/%.dtb | build
 	cp $< $@
@@ -191,7 +191,7 @@ dfu-ram: build/$(TARGET).dfu
 	dfu-util -e
 
 jtag-bootstrap: build/u-boot.elf build/sdk/hw_0/ps7_init.tcl build/sdk/hw_0/system_top.bit scripts/run.tcl
-	$(CROSS_COMPILE)strip build/u-boot.elf
+	$(CROSS_COMPILE)-strip build/u-boot.elf
 	zip -j build/$(ZIP_ARCHIVE_PREFIX)-$@-$(VERSION).zip $^
 
 sysroot: buildroot/output/images/rootfs.cpio.gz
